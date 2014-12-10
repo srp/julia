@@ -1079,7 +1079,7 @@ DLLEXPORT int64_t jl_gc_total_bytes(void);
 DLLEXPORT uint64_t jl_gc_total_hrtime(void);
 int64_t diff_gc_total_bytes(void);
 void sync_gc_total_bytes(void);
-DLLEXPORT void jl_gc_collect(void);
+DLLEXPORT void jl_gc_collect(int full);
 void jl_gc_preserve(jl_value_t *v);
 void jl_gc_unpreserve(void);
 int jl_gc_n_preserved_values(void);

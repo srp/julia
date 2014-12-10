@@ -1339,8 +1339,8 @@ extern jl_array_t *jl_module_init_order;
 
 DLLEXPORT void jl_save_system_image(char *fname)
 {
-    jl_gc_collect();
-    jl_gc_collect();
+    jl_gc_collect(1);
+    jl_gc_collect(0);
     int en = jl_gc_is_enabled();
     jl_gc_disable();
     htable_reset(&backref_table, 250000);

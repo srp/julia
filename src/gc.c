@@ -521,7 +521,7 @@ static inline void free_page(void *p)
 static inline int maybe_collect(void)
 {
     if (should_collect()) {
-        jl_gc_collect();
+        jl_gc_collect(0);
         return 1;
     }
     return 0;
@@ -957,7 +957,7 @@ static inline  void *__pool_alloc(pool_t* p, int osize, int end_offset)
     gcval_t *v, *end;
     if (__unlikely((allocd_bytes += osize) >= 0)) {
         //        allocd_bytes -= osize;
-        jl_gc_collect();
+        jl_gc_collect(0);
         //        allocd_bytes += osize;
     }
     v = p->freelist;
@@ -2047,7 +2047,7 @@ static void clear_mark(int);
 #endif
 
 
-void jl_gc_collect(void)
+void jl_gc_collect(int full)
 {
     if (!is_gc_enabled) return;
     if (jl_in_gc) return;
@@ -2142,12 +2142,12 @@ void jl_gc_collect(void)
         int64_t actual_allocd = allocd_bytes_since_sweep;
         if (!sweeping) {
             // marking is over
-#ifdef GC_TIME
+#if defined(GC_TIME) || defined(GC_FINAL_STATS)
             post_time = jl_hrtime();
 #endif
             // 4. check for objects to finalize
             post_mark();
-#ifdef GC_TIME
+#if defined(GC_TIME) || defined(GC_FINAL_STATS)
             post_time = jl_hrtime() - post_time;
 #endif
             estimate_freed = live_bytes - scanned_bytes - perm_scanned_bytes + actual_allocd;
@@ -2168,16 +2168,22 @@ void jl_gc_collect(void)
             total_allocd_bytes += allocd_bytes_since_sweep;
 
             // 5. next collection decision
-            if ((estimate_freed <= 1024 || estimate_freed < (7*(actual_allocd/10))) && n_pause > 1) {
-                if (collect_interval <= 2*(max_collect_interval/5)) {
-                    collect_interval = 5*(collect_interval/2);
+            int not_freed_enough = estimate_freed < (7*(actual_allocd/10));
+            if ((full || quick_count >= 128 || not_freed_enough) && n_pause > 1) {
+                if (prev_sweep_mask != GC_MARKED || full) {
+                    if (full) recollect = 1; // TODO enable this?
+                }
+                if (not_freed_enough) {
+                    if (collect_interval < default_collect_interval)
+                        collect_interval = default_collect_interval;
+                    else if (collect_interval <= 2*(max_collect_interval/5)) {
+                        collect_interval = 5*(collect_interval/2);
+                    }
                 }
                 sweep_mask = GC_MARKED;
-                if (prev_sweep_mask != GC_MARKED) {
-                    //recollect = 1; // TODO enable this
-                }
+                quick_count = 0;
             } else {
-                collect_interval = default_collect_interval;
+                collect_interval = default_collect_interval/8;
                 sweep_mask = GC_MARKED_NOESC;
             }
             if (sweep_mask == GC_MARKED)
@@ -2260,7 +2266,7 @@ void jl_gc_collect(void)
     }
 #endif
     if (recollect)
-        jl_gc_collect();
+        jl_gc_collect(0);
 }
 
 #if 0
@@ -2323,7 +2329,7 @@ void jl_gc_collect(void)
         // if a lot of objects were finalized, re-run GC to finish freeing
         // their storage if possible.
         if (nfinal > 100000)
-            jl_gc_collect();
+            jl_gc_collect(0);
     }
 }
 
