@@ -654,48 +654,46 @@ static void sweep_weak_refs(void)
 }
 
 // finalization
-static htable_t finalizer_table;
+static arraylist_t finalizer_list;
 static arraylist_t to_finalize;
 
-static void schedule_finalization(void *o)
+static void schedule_finalization(void *o, void *f)
 {
     arraylist_push(&to_finalize, o);
+    arraylist_push(&to_finalize, f);
 }
 
 static void run_finalizer(jl_value_t *o, jl_value_t *ff)
 {
-    jl_function_t *f;
-    while (1) {
-        if (jl_is_tuple(ff))
-            f = (jl_function_t*)jl_t0(ff);
-        else
-            f = (jl_function_t*)ff;
-        assert(jl_is_function(f));
-        JL_TRY {
-            jl_apply(f, (jl_value_t**)&o, 1);
-        }
-        JL_CATCH {
-            JL_PRINTF(JL_STDERR, "error in running finalizer: ");
-            jl_static_show(JL_STDERR, jl_exception_in_transit);
-            JL_PUTC('\n',JL_STDERR);
-        }
-        if (jl_is_tuple(ff))
-            ff = jl_t1(ff);
-        else
-            break;
+    jl_function_t *f = (jl_function_t*)ff;
+    assert(jl_is_function(f));
+    JL_TRY {
+        jl_apply(f, (jl_value_t**)&o, 1);
+    }
+    JL_CATCH {
+        JL_PRINTF(JL_STDERR, "error in running finalizer: ");
+        jl_static_show(JL_STDERR, jl_exception_in_transit);
+        JL_PUTC('\n',JL_STDERR);
     }
 }
 
 static int finalize_object(jl_value_t *o)
 {
-    jl_value_t *ff = NULL;
     int success = 0;
-    JL_GC_PUSH1(&ff);
-    ff = (jl_value_t*)ptrhash_get(&finalizer_table, o);
-    if (ff != HT_NOTFOUND) {
-        ptrhash_remove(&finalizer_table, o);
-        run_finalizer((jl_value_t*)o, ff);
-        success = 1;
+    jl_value_t *f = NULL;
+    JL_GC_PUSH1(&f);
+    for(int i = 0; i < finalizer_list.len; i+=2) {
+        if (o == (jl_value_t*)finalizer_list.items[i]) {
+            f = (jl_value_t*)finalizer_list.items[i+1];
+            if (i < finalizer_list.len - 2) {
+                finalizer_list.items[i] = finalizer_list.items[finalizer_list.len-2];
+                finalizer_list.items[i+1] = finalizer_list.items[finalizer_list.len-1];
+                i -= 2;
+            }
+            finalizer_list.len -= 2;
+            run_finalizer(o, f);
+            success = 1;
+        }
     }
     JL_GC_POP();
     return success;
@@ -703,11 +701,12 @@ static int finalize_object(jl_value_t *o)
 
 static void run_finalizers(void)
 {
-    void *o = NULL;
-    JL_GC_PUSH1(&o);
+    void *o = NULL, *f = NULL;
+    JL_GC_PUSH2(&o, &f);
     while (to_finalize.len > 0) {
+        f = arraylist_pop(&to_finalize);
         o = arraylist_pop(&to_finalize);
-        int ok = finalize_object((jl_value_t*)o);
+        int ok = 1;run_finalizer((jl_value_t*)o, (jl_value_t*)f);
         assert(ok); (void)ok;
     }
     JL_GC_POP();
@@ -715,10 +714,10 @@ static void run_finalizers(void)
 
 void jl_gc_run_all_finalizers(void)
 {
-    for(size_t i=0; i < finalizer_table.size; i+=2) {
-        jl_value_t *f = (jl_value_t*)finalizer_table.table[i+1];
+    for(size_t i=0; i < finalizer_list.len; i+=2) {
+        jl_value_t *f = (jl_value_t*)finalizer_list.items[i+1];
         if (f != HT_NOTFOUND && !jl_is_cpointer(f)) {
-            schedule_finalization(finalizer_table.table[i]);
+            schedule_finalization(finalizer_list.items[i], finalizer_list.items[i+1]);
         }
     }
     run_finalizers();
@@ -726,13 +725,8 @@ void jl_gc_run_all_finalizers(void)
 
 void jl_gc_add_finalizer(jl_value_t *v, jl_function_t *f)
 {
-    jl_value_t **bp = (jl_value_t**)ptrhash_bp(&finalizer_table, v);
-    if (*bp == HT_NOTFOUND) {
-        *bp = (jl_value_t*)f;
-    }
-    else {
-        *bp = (jl_value_t*)jl_tuple2((jl_value_t*)f, *bp);
-    }
+    arraylist_push(&finalizer_list, (void*)v);
+    arraylist_push(&finalizer_list, (void*)f);
 }
 
 void jl_finalize(jl_value_t *o)
@@ -1718,24 +1712,27 @@ static void post_mark(void)
     n_finalized = 0;
     // find unmarked objects that need to be finalized.
     // this must happen last.
-    for(size_t i=0; i < finalizer_table.size; i+=2) {
-        if (finalizer_table.table[i+1] != HT_NOTFOUND) {
-            jl_value_t *v = finalizer_table.table[i];
-            if (!gc_marked(v)) {
-                jl_value_t *fin = finalizer_table.table[i+1];
-                if (gc_typeof(fin) == (jl_value_t*)jl_voidpointer_type) {
-                    void *p = jl_unbox_voidpointer(fin);
-                    if (p)
-                        ((void (*)(void*))p)(jl_data_ptr(v));
-                    finalizer_table.table[i+1] = HT_NOTFOUND;
-                    continue;
-                }
-                gc_push_root(v, 0);
-                schedule_finalization(v);
-                n_finalized++;
+    for(size_t i=0; i < finalizer_list.len; i+=2) {
+        jl_value_t *v = (jl_value_t*)finalizer_list.items[i];
+        jl_value_t *fin = (jl_value_t*)finalizer_list.items[i+1];
+        if (!gc_marked(v)) {
+            if (i < finalizer_list.len - 2) {
+                finalizer_list.items[i] = finalizer_list.items[finalizer_list.len-2];
+                finalizer_list.items[i+1] = finalizer_list.items[finalizer_list.len-1];
+                i -= 2;
             }
-            gc_push_root(finalizer_table.table[i+1], 0);
+            finalizer_list.len -= 2;
+            if (gc_typeof(fin) == (jl_value_t*)jl_voidpointer_type) {
+                void *p = jl_unbox_voidpointer(fin);
+                if (p)
+                    ((void (*)(void*))p)(jl_data_ptr(v));
+                continue;
+            }
+            gc_push_root(v, 0);
+            schedule_finalization(v, fin);
+            n_finalized++;
         }
+        gc_push_root(fin, 0);
     }
     visit_mark_stack(GC_MARKED_NOESC);
 }
@@ -2465,7 +2462,7 @@ void jl_gc_init(void)
     collect_interval = default_collect_interval;
     allocd_bytes = -default_collect_interval;
 
-    htable_new(&finalizer_table, 0);
+    arraylist_new(&finalizer_list, 0);
     arraylist_new(&to_finalize, 0);
     arraylist_new(&preserved_values, 0);
     arraylist_new(&weak_refs, 0);
