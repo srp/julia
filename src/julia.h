@@ -1369,6 +1369,7 @@ extern DLLEXPORT jl_compileropts_t jl_compileropts;
 #define JL_COMPILEROPT_DUMPBITCODE_ON 1
 #define JL_COMPILEROPT_DUMPBITCODE_OFF 2
 
+// GC write barrier
 DLLEXPORT void gc_queue_root(void *root);
 void gc_queue_binding(void *bnd);
 void gc_setmark_buf(void *buf, int);
@@ -1378,16 +1379,6 @@ static inline void gc_wb_binding(void *bnd, void *val)
 {
     if (__unlikely((*(uintptr_t*)bnd & 1) == 1 && (*(uintptr_t*)val & 1) == 0))
         gc_queue_binding(bnd);
-}
-
-static inline void gc_wb_fwd(void* parent, void* ptr)
-{
-    // if parent is marked and ptr is clean
-    if(__unlikely((*((uintptr_t*)parent) & 1) == 1 && (*((uintptr_t*)ptr) & 1) == 0)) {
-        // the set lsb indicates this object must stay in the remset until the next
-        // long collection
-        gc_queue_root((void*)((uintptr_t)ptr | 1));
-    }
 }
 
 static inline void gc_wb(void *parent, void *ptr)
@@ -1401,8 +1392,8 @@ static inline void gc_wb_buf(void *parent, void *bufptr)
 {
     // if parent is marked and buf is not
     if (__unlikely((*((uintptr_t*)parent) & 1) == 1))
-                   //                   (*((uintptr_t*)bufptr) & 3) != 1))
-          gc_setmark_buf(bufptr, *(uintptr_t*)parent & 3);
+        //                   (*((uintptr_t*)bufptr) & 3) != 1))
+        gc_setmark_buf(bufptr, *(uintptr_t*)parent & 3);
 }
 
 static inline void gc_wb_back(void *ptr)
