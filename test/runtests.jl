@@ -9,7 +9,7 @@ testnames = [
     "resolve", "pollfd", "mpfr", "broadcast", "complex", "socket",
     "floatapprox", "readdlm", "reflection", "regex", "float16", "combinatorics",
     "sysinfo", "rounding", "ranges", "mod2pi", "euler", "show",
-    "lineedit", "replcompletions", "repl", "test", "goto",
+    "lineedit", "replcompletions", "repl", "test", "goto", "threads",
     "llvmcall", "grisu", "nullable", "meta", "profile",
     "libgit2", "docs"
 ]
