@@ -80,8 +80,8 @@ static const char *opts =
     " --check-bounds={yes|no}   Emit bounds checks always or never (ignoring declarations)\n"
     " --int-literals={32|64}    Select integer literal size independent of platform\n"
     " --dump-bitcode={yes|no}   Dump bitcode for the system image (used with --build)\n"
-    " --depwarn={yes|no}        Enable or disable syntax and method deprecation warnings\n";
-    " --inline={yes|no}         Control whether inlining is permitted (overrides functions declared as @inline)\n"
+    " --depwarn={yes|no}        Enable or disable syntax and method deprecation warnings\n"
+    " --inline={yes|no}         Control whether inlining is permitted (overrides functions declared as @inline)\n";
 
 void parse_opts(int *argcp, char ***argvp)
 {
@@ -313,7 +313,7 @@ void parse_opts(int *argcp, char ***argvp)
                 exit(1);
             }
             break;
-        case can_inline:      
+        case can_inline:
             if (!strcmp(optarg,"yes"))
                 jl_compileropts.can_inline = 1;
             else if (!strcmp(optarg,"no"))
