@@ -80,6 +80,12 @@ end
 @test readchomp(`$exename --depwarn=yes -E "Base.syntax_deprecation_warnings(false)"`) == "true"
 @test !success(`$exename --depwarn=false`)
 
+# --inline
+@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().can_inline)"`) == "true"
+@test readchomp(`$exename --inline=yes -E "bool(Base.JLCompilerOpts().can_inline)"`) == "true"
+@test readchomp(`$exename --inline=no -E "bool(Base.JLCompilerOpts().can_inline)"`) == "false"
+@test !success(`$exename --inline=false`)
+
 # pass arguments
 let testfile = joinpath(dirname(@__FILE__), "test_loadfile.jl")
     @test readchomp(`$exename $testfile foo -bar --baz`) ==  "UTF8String[\"foo\",\"-bar\",\"--baz\"]"
