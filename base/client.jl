@@ -1,6 +1,5 @@
 ## client.jl - frontend handling command line options, environment setup,
 ##             and REPL
-
 immutable JLOptions
     version::Int8
     quiet::Int8
