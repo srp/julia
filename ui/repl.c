@@ -322,6 +322,7 @@ void parse_opts(int *argcp, char ***argvp)
                 ios_printf(ios_stderr, "julia: invalid argument to --inline (%s)\n", optarg);
                 exit(1);
             }
+	    break;
         case 'b': // build
             jl_compileropts.build_path = strdup(optarg);
             if (!imagepathspecified)
