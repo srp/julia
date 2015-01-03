@@ -6,9 +6,81 @@
  Metaprogramming  
 *****************
 
-The strongest legacy of Lisp in the Julia language is its metaprogramming
-support. Like Lisp, Julia represents its own code as a data structure of
-the language itself.
+Program representation
+----------------------
+
+Every Julia program starts life as a string::
+
+    julia> prog = "1 + 1"
+    "1 + 1"
+
+**What happens next?**
+
+The next step is to `parse <http://en.wikipedia.org/wiki/Parsing#Computer_languages>`_
+each string into an object called an expression, represented by the Julia type
+:obj:`Expr`::
+
+    julia> ex1 = parse(prog)
+    :(1 + 1)
+
+    julia> typeof(ex)
+    Expr
+
+Expressions may also be constructed directly in
+`prefix notation <http://en.wikipedia.org/wiki/Polish_notation>`::
+
+    julia> ex2 = Expr(:call, :+, 1, 1)
+    true
+
+The two expressions constructed above -- by parsing and direct
+construction -- are equivalent::
+
+    julia> ex1 == ex2
+    true
+
+**The key point here is that Julia code is internally represented
+as a data structure that is accessible from the language itself.**
+
+:obj:`Expr` objects contain three parts: a Symbol identifying the action represented
+by the expression::
+
+    julia> ex1.head
+    :call
+
+The expression arguments, which may be symbols, other expressions, or literal values::
+
+    julia> ex1.args
+    3-element Array{Any,1}:
+      :+
+     1
+     1
+
+The :func:`dump` function provides an indented and annotated view of :obj:`Expr`
+objects::
+
+    julia> dump(ex2)
+    Expr
+      head: Symbol call
+      args: Array(Any,(3,))
+	1: Symbol +
+	2: Int64 1
+	3: Int64 1
+      typ: Any
+
+:obj:`Expr` objects may also be nested::
+
+    julia> ex3 = parse("(4 + 4) / 2")
+    :((4 + 4) / 2)
+
+    julia> Base.Meta.show_sexpr(ex3)
+    (:call, :/, (:call, :+, 4, 4), 2)
+
+The :func:`show_sexpr` function displays the `S-expression <http://en.wikipedia.org/wiki/S-expression>
+form of a given :obj:`Expr`, which may look very familiar to users
+with Lisp experience.
+
+**The strongest legacy of Lisp in the Julia language is its metaprogramming support.**
+Like Lisp, Julia represents its own code as a data structure of the language itself.
 Since code is represented by objects that can be created and manipulated
 from within the language, it is possible for a program to transform and
 generate its own code. This allows sophisticated code generation without
@@ -22,93 +94,12 @@ all data types and code are represented by normal Julia data structures,
 so the structure of the program and its types can be explored
 programmatically just like any other data.
 
-Expressions and :func:`eval`
-----------------------------
-
-Julia code is represented as a syntax tree built out of Julia data
-structures of type :obj:`Expr`. This makes it easy to construct and
-manipulate Julia code from within Julia, without generating or parsing
-source text. Here is the definition of the :obj:`Expr` type::
-
-    type Expr
-      head::Symbol
-      args::Array{Any,1}
-      typ
-    end
-
-The ``head`` is a symbol identifying the kind of expression, and
-``args`` is an array of subexpressions, which may be symbols referencing
-the values of variables at evaluation time, may be nested :obj:`Expr`
-objects, or may be actual values of objects. The ``typ`` field is used
-by type inference to store type annotations, and can generally be
-ignored.
-
-There is special syntax for "quoting" code (analogous to quoting
-strings) that makes it easy to create expression objects without
-explicitly constructing :obj:`Expr` objects. There are two forms: a short
-form for inline expressions using ``:`` followed by a single expression,
-and a long form for blocks of code, enclosed in ``quote ... end``. Here
-is an example of the short form used to quote an arithmetic expression:
-
-.. doctest::
-
-    julia> ex = :(a+b*c+1)
-    :(a + b * c + 1)
-
-    julia> typeof(ex)
-    Expr
-
-    julia> ex.head
-    :call
-
-    julia> typeof(ans)
-    Symbol
-
-    julia> ex.args
-    4-element Array{Any,1}:
-      :+
-      :a
-      :(b * c)
-     1
-
-    julia> typeof(ex.args[1])
-    Symbol
-
-    julia> typeof(ex.args[2])
-    Symbol
-
-    julia> typeof(ex.args[3])
-    Expr
-
-    julia> typeof(ex.args[4])
-    Int64
-
-Expressions provided by the parser generally only have symbols, other
-expressions, and literal values as their args, whereas expressions
-constructed by Julia code can easily have arbitrary run-time values
-without literal forms as args. In this specific example, ``+`` and ``a``
-are symbols, ``*(b,c)`` is a subexpression, and ``1`` is a literal
-64-bit signed integer. Here's an example of the longer expression
-quoting form:
-
-.. doctest::
-
-    julia> quote
-             x = 1
-             y = 2
-             x + y
-           end
-    quote  # none, line 2:
-        x = 1 # line 3:
-        y = 2 # line 4:
-        x + y
-    end
-
 Symbols
 ~~~~~~~
 
-When the argument to ``:`` is just a symbol, a :obj:`Symbol` object results
-instead of an :obj:`Expr`:
+The ``:`` character has two syntactic uses in Julia. The first form creates a
+:obj:`Symbol`, a special kind of string used as the building-block of
+expressions:
 
 .. doctest::
 
@@ -118,8 +109,20 @@ instead of an :obj:`Expr`:
     julia> typeof(ans)
     Symbol
 
+:obj:`Symbol`\ s can also be created using :func:`symbol`, which takes
+a character or string as its argument::
+
+    julia> :foo == symbol("foo")
+    true
+
+    julia> symbol('\'')
+    :'
+
+    julia> symbol("'")
+    :'
+
 In the context of an expression, symbols are used to indicate access to
-variables, and when an expression is evaluated, a symbol evaluates to
+variables; when an expression is evaluated, a symbol is replaced with
 the value bound to that symbol in the appropriate :ref:`scope
 <man-variables-and-scoping>`.
 
@@ -134,16 +137,56 @@ ambiguity in parsing.:
     julia> :(::)
     :(::)
 
-:obj:`Symbol`\ s can also be created using :func:`symbol`, which takes
-a character or string as its argument:
+Expression construction
+-----------------------
+
+There is special syntax to create expression objects without using the
+explicit :obj:`Expr` constructor above. A short form for inline expressions
+uses the ``:`` followed by a single parenthesized expression. Here is an
+example of the short form used to quote an arithmetic expression:
+
+    julia> ex = :(a+b*c+1)
+    :(a + b * c + 1)
+
+    julia> typeof(ex)
+    Expr
+
+(to view the structure of this expression, try ``ex.head`` and ``ex.args``,
+or use :func:`dump` as in the previous section).
+
+Note that equivalent expressions may be constructed using :func:`parse` or
+the direct :obj:`Expr` form::
+
+    julia>      :(a + b*c + 1)  ==
+	   parse("a + b*c + 1") ==
+	   Expr(:call, :+, :a, Expr(:call, :*, :b, :c), 1)
+    true
+
+Expressions provided by the parser generally only have symbols, other
+expressions, and literal values as their args, whereas expressions
+constructed by Julia code can have arbitrary run-time values
+without literal forms as args. In this specific example, ``+`` and ``a``
+are symbols, ``*(b,c)`` is a subexpression, and ``1`` is a literal
+64-bit signed integer.
+
+There is a second form of quoting for multiple expressions:
+blocks of code enclosed in ``quote ... end``
 
 .. doctest::
 
-    julia> symbol('\'')
-    :'
+    julia> ex = quote
+		    x = 1
+		    y = 2
+		    x + y
+		end
+    quote  # none, line 2:
+	x = 1 # line 3:
+	y = 2 # line 4:
+	x + y
+    end
 
-    julia> symbol("'")
-    :'
+    julia> typeof(ex)
+    Expr
 
 :func:`eval` and Interpolation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -610,9 +653,9 @@ variable into the regular expression, one must take this more verbose
 approach; in cases where the regular expression pattern itself is
 dynamic, potentially changing upon each loop iteration, a new regular
 expression object must be constructed on each iteration. In the vast
-majority of use cases, however, regular expressions are not constructed based on run-time data. In this majority of
-cases, the ability to write regular expressions as compile-time values
-is invaluable.
+majority of use cases, however, regular expressions are not constructed
+based on run-time data. In this majority of cases, the ability to write
+regular expressions as compile-time values is invaluable.
 
 The mechanism for user-defined string literals is deeply, profoundly
 powerful. Not only are Julia's non-standard literals implemented using
