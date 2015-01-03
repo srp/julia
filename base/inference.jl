@@ -1573,7 +1573,7 @@ function typeinf(linfo::LambdaStaticData,atypes::Tuple,sparams::Tuple, def, cop)
 
     if !rec
         @assert fulltree.args[3].head === :body
-        if JLCompilerOpts().can_inline == 1
+        if JLOptions().can_inline == 1
             fulltree.args[3] = inlining_pass(fulltree.args[3], sv, fulltree)[1]
             # inlining can add variables
             sv.vars = append_any(f_argnames(fulltree), fulltree.args[2][1])

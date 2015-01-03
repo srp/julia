@@ -160,7 +160,7 @@ void parse_opts(int *argcp, char ***argvp)
             jl_options.quiet = 1;
             break;
         case 'H': // home
-            jl_compileropts.julia_home = strdup(optarg);
+            jl_options.julia_home = strdup(optarg);
             break;
         case 'e': // eval
             jl_options.eval = strdup(optarg);
@@ -175,11 +175,11 @@ void parse_opts(int *argcp, char ***argvp)
             jl_options.load = strdup(optarg);
             break;
         case 'J': // sysimage
-            jl_compileropts.image_file = strdup(optarg);
+            jl_options.image_file = strdup(optarg);
             imagepathspecified = 1;
             break;
         case 'C': // cpu-target
-            jl_compileropts.cpu_target = strdup(optarg);
+            jl_options.cpu_target = strdup(optarg);
             break;
         case 'p': // procs
             errno = 0;
@@ -212,9 +212,9 @@ void parse_opts(int *argcp, char ***argvp)
                 exit(1);
             }
             break;
-	case no_history_file:
-	    jl_options.historyfile = JL_OPTIONS_HISTORYFILE_OFF;
-	    break;
+        case no_history_file:
+	        jl_options.historyfile = JL_OPTIONS_HISTORYFILE_OFF;
+            break;
         case startup_file:
             if (!strcmp(optarg,"yes"))
                 jl_options.startupfile = JL_OPTIONS_STARTUPFILE_ON;
@@ -225,19 +225,19 @@ void parse_opts(int *argcp, char ***argvp)
                 exit(1);
             }
             break;
-	case 'f':
-	    jl_options.startupfile = JL_OPTIONS_STARTUPFILE_OFF;
-	    break;
-	case 'F':
-	    jl_options.startupfile = JL_OPTIONS_STARTUPFILE_ON;
-	    break;
+        case 'f':
+	        jl_options.startupfile = JL_OPTIONS_STARTUPFILE_OFF;
+	        break;
+        case 'F':
+	        jl_options.startupfile = JL_OPTIONS_STARTUPFILE_ON;
+	        break;
         case compile:
             if (!strcmp(optarg,"yes"))
-                jl_compileropts.compile_enabled = JL_COMPILEROPT_COMPILE_ON;
+                jl_options.compile_enabled = JL_OPTIONS_COMPILE_ON;
             else if (!strcmp(optarg,"no"))
-                jl_compileropts.compile_enabled = JL_COMPILEROPT_COMPILE_OFF;
+                jl_options.compile_enabled = JL_OPTIONS_COMPILE_OFF;
             else if (!strcmp(optarg,"all"))
-                jl_compileropts.compile_enabled = JL_COMPILEROPT_COMPILE_ALL;
+                jl_options.compile_enabled = JL_OPTIONS_COMPILE_ALL;
             else {
                 ios_printf(ios_stderr, "julia: invalid argument to --compile (%s)\n", optarg);
                 exit(1);
@@ -272,26 +272,26 @@ void parse_opts(int *argcp, char ***argvp)
             }
             break;
         case 'O': // optimize
-            jl_compileropts.opt_level = 1;
+            jl_options.opt_level = 1;
             break;
         case 'i': // isinteractive
             jl_options.isinteractive = 1;
             break;
         case check_bounds:
             if (!strcmp(optarg,"yes"))
-                jl_compileropts.check_bounds = JL_COMPILEROPT_CHECK_BOUNDS_ON;
+                jl_options.check_bounds = JL_OPTIONS_CHECK_BOUNDS_ON;
             else if (!strcmp(optarg,"no"))
-                jl_compileropts.check_bounds = JL_COMPILEROPT_CHECK_BOUNDS_OFF;
-	    else {
+                jl_options.check_bounds = JL_OPTIONS_CHECK_BOUNDS_OFF;
+            else {
                 ios_printf(ios_stderr, "julia: invalid argument to --check-bounds={yes|no} (%s)\n", optarg);
-		exit(1);
-	    }
+		        exit(1);
+	        }
             break;
         case int_literals:
             if (!strcmp(optarg,"32"))
-                jl_compileropts.int_literals = 32;
+                jl_options.int_literals = 32;
             else if (!strcmp(optarg,"64"))
-                jl_compileropts.int_literals = 64;
+                jl_options.int_literals = 64;
             else {
                 ios_printf(ios_stderr, "julia: invalid argument to --int-literals={32|64} (%s)\n", optarg);
                 exit(1);
@@ -299,15 +299,15 @@ void parse_opts(int *argcp, char ***argvp)
             break;
         case dump_bitcode:
             if (!strcmp(optarg,"yes"))
-                jl_compileropts.dumpbitcode = JL_COMPILEROPT_DUMPBITCODE_ON;
+                jl_options.dumpbitcode = JL_OPTIONS_DUMPBITCODE_ON;
             else if (!strcmp(optarg,"no"))
-                jl_compileropts.dumpbitcode = JL_COMPILEROPT_DUMPBITCODE_OFF;
+                jl_options.dumpbitcode = JL_OPTIONS_DUMPBITCODE_OFF;
             break;
         case depwarn:
             if (!strcmp(optarg,"yes"))
-                jl_compileropts.depwarn = 1;
+                jl_options.depwarn = 1;
             else if (!strcmp(optarg,"no"))
-                jl_compileropts.depwarn = 0;
+                jl_options.depwarn = 0;
             else {
                 ios_printf(ios_stderr, "julia: invalid argument to --depwarn={yes|no} (%s)\n", optarg);
                 exit(1);
@@ -315,18 +315,18 @@ void parse_opts(int *argcp, char ***argvp)
             break;
         case can_inline:
             if (!strcmp(optarg,"yes"))
-                jl_compileropts.can_inline = 1;
+                jl_options.can_inline = 1;
             else if (!strcmp(optarg,"no"))
-                jl_compileropts.can_inline = 0;
+                jl_options.can_inline = 0;
             else {
                 ios_printf(ios_stderr, "julia: invalid argument to --inline (%s)\n", optarg);
                 exit(1);
             }
-	    break;
+            break;
         case 'b': // build
-            jl_compileropts.build_path = strdup(optarg);
+            jl_options.build_path = strdup(optarg);
             if (!imagepathspecified)
-                jl_compileropts.image_file = NULL;
+                jl_options.image_file = NULL;
             break;
         case worker:
             jl_options.worker = 1;
@@ -340,12 +340,12 @@ void parse_opts(int *argcp, char ***argvp)
             exit(1);
         }
     }
-    jl_compileropts.code_coverage = codecov;
-    jl_compileropts.malloc_log = malloclog;
+    jl_options.code_coverage = codecov;
+    jl_options.malloc_log = malloclog;
     optind -= skip;
     *argvp += optind;
     *argcp -= optind;
-    if (jl_compileropts.image_file==NULL && *argcp > 0) {
+    if (jl_options.image_file==NULL && *argcp > 0) {
         if (strcmp((*argvp)[0], "-")) {
             program = (*argvp)[0];
         }

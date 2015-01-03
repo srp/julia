@@ -1,21 +1,5 @@
 ## client.jl - frontend handling command line options, environment setup,
 ##             and REPL
-immutable JLOptions
-    version::Int8
-    quiet::Int8
-    eval::Ptr{Cchar}
-    print::Ptr{Cchar}
-    postboot::Ptr{Cchar}
-    load::Ptr{Cchar}
-    nprocs::Clong
-    machinefile::Ptr{Cchar}
-    isinteractive::Int8
-    color::Int8
-    historyfile::Int8
-    startupfile::Int8
-    worker::Int8
-    bindto::Ptr{Cchar}
-end
 
 const ARGS = UTF8String[]
 
@@ -413,7 +397,7 @@ import .Terminals
 import .REPL
 
 function _start()
-    opts = unsafe_load(cglobal(:jl_options, JLOptions))
+    opts = JLOptions()
     try
         init_parallel()
         init_bind_addr(opts)

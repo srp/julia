@@ -51,29 +51,29 @@ end
 # readchomp(`$exename --int-literals=64 -E "sizeof(Int)"`)
 
 # --code-coverage
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().code_coverage)"`) == "false"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().code_coverage)" --code-coverage=none`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().code_coverage)"`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().code_coverage)" --code-coverage=none`) == "false"
 
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().code_coverage)" --code-coverage`) == "true"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().code_coverage)" --code-coverage=user`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().code_coverage)" --code-coverage`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().code_coverage)" --code-coverage=user`) == "true"
 
 # --track-allocation
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().malloc_log)"`) == "false"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().malloc_log)" --track-allocation=none`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().malloc_log)"`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().malloc_log)" --track-allocation=none`) == "false"
 
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().malloc_log)" --track-allocation`) == "true"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().malloc_log)" --track-allocation=user`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().malloc_log)" --track-allocation`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().malloc_log)" --track-allocation=user`) == "true"
 
 # --check-bounds
-@test int(readchomp(`$exename -E "int(Base.JLCompilerOpts().check_bounds)"`)) == 0
-@test int(readchomp(`$exename -E "int(Base.JLCompilerOpts().check_bounds)" --check-bounds=yes`)) == 1
-@test int(readchomp(`$exename -E "int(Base.JLCompilerOpts().check_bounds)" --check-bounds=no`)) == 2
+@test int(readchomp(`$exename -E "int(Base.JLOptions().check_bounds)"`)) == 0
+@test int(readchomp(`$exename -E "int(Base.JLOptions().check_bounds)" --check-bounds=yes`)) == 1
+@test int(readchomp(`$exename -E "int(Base.JLOptions().check_bounds)" --check-bounds=no`)) == 2
 @test !success(`$exename -E "exit(0)" --check-bounds=false`)
 
 # --optimize
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().opt_level)"`) == "false"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().opt_level)" -O`) == "true"
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().opt_level)" --optimize`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().opt_level)"`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().opt_level)" -O`) == "true"
+@test readchomp(`$exename -E "bool(Base.JLOptions().opt_level)" --optimize`) == "true"
 
 # --depwarn
 @test readchomp(`$exename --depwarn=no -E "Base.syntax_deprecation_warnings(true)"`) == "false"
@@ -81,9 +81,9 @@ end
 @test !success(`$exename --depwarn=false`)
 
 # --inline
-@test readchomp(`$exename -E "bool(Base.JLCompilerOpts().can_inline)"`) == "true"
-@test readchomp(`$exename --inline=yes -E "bool(Base.JLCompilerOpts().can_inline)"`) == "true"
-@test readchomp(`$exename --inline=no -E "bool(Base.JLCompilerOpts().can_inline)"`) == "false"
+@test readchomp(`$exename -E "bool(Base.JLOptions().can_inline)"`) == "true"
+@test readchomp(`$exename --inline=yes -E "bool(Base.JLOptions().can_inline)"`) == "true"
+@test readchomp(`$exename --inline=no -E "bool(Base.JLOptions().can_inline)"`) == "false"
 @test !success(`$exename --inline=false`)
 
 # pass arguments

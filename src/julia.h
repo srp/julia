@@ -1322,65 +1322,57 @@ void jl_print_gc_stats(JL_STREAM *s);
 // debugging
 void show_execution_point(char *filename, int lno);
 
-
-// compiler options -----------------------------------------------------------
+// julia options -----------------------------------------------------------
 
 typedef struct {
+    int8_t version;
+    int8_t quiet;
     const char *julia_home;
     const char *julia_bin;
     const char *build_path;
+    const char *eval;
+    const char *print;
+    const char *postboot;
+    const char *load;
     const char *image_file;
     const char *cpu_target;
+    long   nprocs;
+    const char *machinefile;
+    int8_t isinteractive;
+    int8_t color;
+    int8_t historyfile;
+    int8_t startupfile;
+    int8_t compile_enabled;
     int8_t code_coverage;
     int8_t malloc_log;
-    int8_t check_bounds;
-    int8_t dumpbitcode;
-    int int_literals;
-    int8_t compile_enabled;
     int8_t opt_level;
+    int8_t check_bounds;
+    int    int_literals;
+    int8_t dumpbitcode;
     int8_t depwarn;
     int8_t can_inline;
-} jl_compileropts_t;
+    int8_t worker;
+    const char *bindto;
+} jl_options_t;
 
-extern DLLEXPORT jl_compileropts_t jl_compileropts;
+extern DLLEXPORT jl_options_t jl_options;
 
 // Settings for code_coverage and mallog_log
 #define JL_LOG_NONE 0
 #define JL_LOG_USER 1
 #define JL_LOG_ALL  2
 
-#define JL_COMPILEROPT_CHECK_BOUNDS_DEFAULT 0
-#define JL_COMPILEROPT_CHECK_BOUNDS_ON 1
-#define JL_COMPILEROPT_CHECK_BOUNDS_OFF 2
+#define JL_OPTIONS_CHECK_BOUNDS_DEFAULT 0
+#define JL_OPTIONS_CHECK_BOUNDS_ON 1
+#define JL_OPTIONS_CHECK_BOUNDS_OFF 2
 
-#define JL_COMPILEROPT_COMPILE_DEFAULT 1
-#define JL_COMPILEROPT_COMPILE_OFF 0
-#define JL_COMPILEROPT_COMPILE_ON  1
-#define JL_COMPILEROPT_COMPILE_ALL 2
+#define JL_OPTIONS_COMPILE_DEFAULT 1
+#define JL_OPTIONS_COMPILE_OFF 0
+#define JL_OPTIONS_COMPILE_ON  1
+#define JL_OPTIONS_COMPILE_ALL 2
 
-#define JL_COMPILEROPT_DUMPBITCODE_ON 1
-#define JL_COMPILEROPT_DUMPBITCODE_OFF 2
-
-// julia options --------------------------------------------------------------
-
-typedef struct {
-    int8_t version;
-    int8_t quiet;
-    const char *eval;
-    const char *print;
-    const char *postboot;
-    const char *load;
-    long nprocs;
-    const char *machinefile;
-    int8_t isinteractive;
-    int8_t color;
-    int8_t historyfile;
-    int8_t startupfile;
-    int8_t worker;
-    const char *bindto;
-} jl_options_t;
-
-extern DLLEXPORT jl_options_t jl_options;
+#define JL_OPTIONS_DUMPBITCODE_ON 1
+#define JL_OPTIONS_DUMPBITCODE_OFF 2
 
 #define JL_OPTIONS_COLOR_ON 1
 #define JL_OPTIONS_COLOR_OFF 2
