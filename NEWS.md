@@ -168,6 +168,11 @@ Deprecated or removed
   * `randbool` is deprecated. Use `rand(Bool)` to produce a random boolean value, and
     `bitrand` to produce a random BitArray ([#9105], [#9569]).
 
+REPL improvements
+-----------------
+
+  * Undo via Ctrl-/ and Ctrl-_
+
 Julia v0.3.0 Release Notes
 ==========================
 

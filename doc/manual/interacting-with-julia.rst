@@ -159,7 +159,7 @@ The Julia REPL makes great use of key bindings.  Several control-key bindings we
 +------------------------+----------------------------------------------------+
 | ``^T``                 | Transpose the characters about the cursor          |
 +------------------------+----------------------------------------------------+
-| Delete, ``^D``         | Forward delete one character (when buffer has text)|
+| ``^/``, ``^_``         | Undo                                               |
 +------------------------+----------------------------------------------------+
 
 Customizing keybindings
