@@ -15,10 +15,10 @@ program and its types just like any other data.
 Since code is represented by objects that can be created and manipulated
 from within the language, it is possible for a program to transform and
 generate its own code. This allows sophisticated code generation without
-extra build steps, and also allows true Lisp-style macros, as compared
-to preprocessor "macro" systems, like that of C and C++, that perform
-superficial textual manipulation as a separate pass before any real
-parsing or interpretation occurs.
+extra build steps, and also allows true Lisp-style macros operating at
+the level of abstract syntax. In contrast, preprocessor "macro" systems,
+like that of C and C++, perform textual manipulation and substitution
+before any actual parsing or interpretation occurs.
 
 Program representation and manipulation
 ---------------------------------------
@@ -55,13 +55,14 @@ construction -- are equivalent::
 **The key point here is that Julia code is internally represented
 as a data structure that is accessible from the language itself.**
 
-:obj:`Expr` objects contain three parts: A Symbol identifying the action represented
-by the expression::
+:obj:`Expr` objects contain three parts:
+
+- a Symbol identifying the action represented by the expression::
 
     julia> ex1.head
     :call
 
-The expression arguments, which may be symbols, other expressions, or literal values::
+- the expression arguments, which may be symbols, other expressions, or literal values::
 
     julia> ex1.args
     3-element Array{Any,1}:
@@ -69,10 +70,10 @@ The expression arguments, which may be symbols, other expressions, or literal va
      1
      1
 
-The expression result type, which may be annotated by the user or inferred
-by the compiler:
+- finally, the expression result type, which may be annotated by the user or inferred
+  by the compiler (and may be ignored completely for the purposes of this chapter):
 
-    julia> ex.typ
+    julia> ex1.typ
     Any
 
 The :func:`dump` function provides indented and annotated display of :obj:`Expr`
@@ -95,14 +96,14 @@ objects::
     julia> Base.Meta.show_sexpr(ex3)
     (:call, :/, (:call, :+, 4, 4), 2)
 
-The :func:`show_sexpr` function displays the `S-expression <http://en.wikipedia.org/wiki/S-expression>
-form of a given :obj:`Expr`, which may look very familiar to users of Lisp.
+(the :func:`show_sexpr` function displays the `S-expression <http://en.wikipedia.org/wiki/S-expression>`_
+form of a given :obj:`Expr`, which may look very familiar to users of Lisp)
 
 Symbols
 ~~~~~~~
 
 The ``:`` character has two syntactic purposes in Julia. The first form creates a
-:obj:`Symbol`, a special kind of identifier used as one building-block of
+:obj:`Symbol`, a special kind of string-like identifier used as one building-block of
 expressions:
 
 .. doctest::
@@ -198,7 +199,7 @@ blocks of code enclosed in ``quote ... end``
 Interpolation
 ~~~~~~~~~~~~~
 
-Direction construction of :obj:`Expr` objects with value arguments is
+Direct construction of :obj:`Expr` objects with value arguments is
 powerful, but :obj:`Expr` constructors can be tedious compared to "normal"
 Julia syntax. Instead, Julia allows "splicing" or interpolation of expression
 objects, prefixed with ``$``, into quoted expressions. The above example
@@ -382,10 +383,10 @@ output:
 
 So, why are macros even necessary? As a simplifying analogy, let's
 define ``The Full Julia Compiler`` as ``eval, but much faster``.
-We actually want to *avoid* calling :func:`eval` directly in most
+We actually want to *avoid* calling the :func:`eval` directly in
 "real" code, because it will be exceptionally slow compared to using
 ``The Full Julia Compiler``. But, if we are generating code, how
-how can we avoid calling :func:`eval` to evaluate our expressions?
+how can we avoid calling :func:`eval` to execute our expressions?
 
 The answer is macros.
 
