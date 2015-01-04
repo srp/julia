@@ -20,10 +20,12 @@ the level of abstract syntax. In contrast, preprocessor "macro" systems,
 like that of C and C++, perform textual manipulation and substitution
 before any actual parsing or interpretation occurs.
 
-Program representation and manipulation
----------------------------------------
+Program representation
+----------------------
 
-Every Julia program starts life as a string::
+Every Julia program starts life as a string:
+
+.. doctest::
 
     julia> prog = "1 + 1"
     "1 + 1"
@@ -32,7 +34,9 @@ Every Julia program starts life as a string::
 
 The next step is to `parse <http://en.wikipedia.org/wiki/Parsing#Computer_languages>`_
 each string into an object called an expression, represented by the Julia type
-:obj:`Expr`::
+:obj:`Expr`:
+
+.. doctest::
 
     julia> ex1 = parse(prog)
     :(1 + 1)
@@ -41,13 +45,17 @@ each string into an object called an expression, represented by the Julia type
     Expr
 
 Expressions may also be constructed directly in
-`prefix notation <http://en.wikipedia.org/wiki/Polish_notation>`_::
+`prefix notation <http://en.wikipedia.org/wiki/Polish_notation>`_:
+
+.. doctest::
 
     julia> ex2 = Expr(:call, :+, 1, 1)
     true
 
 The two expressions constructed above -- by parsing and by direct
-construction -- are equivalent::
+construction -- are equivalent:
+
+.. doctest::
 
     julia> ex1 == ex2
     true
@@ -57,12 +65,16 @@ as a data structure that is accessible from the language itself.**
 
 :obj:`Expr` objects contain three parts:
 
-- a Symbol identifying the action represented by the expression::
+- a Symbol identifying the action represented by the expression:
+
+.. doctest::
 
     julia> ex1.head
     :call
 
-- the expression arguments, which may be symbols, other expressions, or literal values::
+- the expression arguments, which may be symbols, other expressions, or literal values:
+
+.. doctest::
 
     julia> ex1.args
     3-element Array{Any,1}:
@@ -73,11 +85,15 @@ as a data structure that is accessible from the language itself.**
 - finally, the expression result type, which may be annotated by the user or inferred
   by the compiler (and may be ignored completely for the purposes of this chapter):
 
+.. doctest::
+
     julia> ex1.typ
     Any
 
 The :func:`dump` function provides indented and annotated display of :obj:`Expr`
-objects::
+objects:
+
+.. doctest::
 
     julia> dump(ex2)
     Expr
@@ -88,7 +104,9 @@ objects::
 	3: Int64 1
       typ: Any
 
-:obj:`Expr` objects may also be nested::
+:obj:`Expr` objects may also be nested:
+
+.. doctest::
 
     julia> ex3 = parse("(4 + 4) / 2")
     :((4 + 4) / 2)
@@ -115,7 +133,9 @@ expressions:
     Symbol
 
 :obj:`Symbol`\ s can also be created using :func:`symbol`, which takes
-a character or string as its argument::
+a character or string as its argument:
+
+.. doctest::
 
     julia> :foo == symbol("foo")
     true
@@ -151,7 +171,9 @@ Quoting
 There is special syntax to create expression objects without using the
 explicit :obj:`Expr` constructor above. A short form for inline expressions
 uses the ``:`` followed by a single parenthesized expression. Here is an
-example of the short form used to quote an arithmetic expression::
+example of the short form used to quote an arithmetic expression:
+
+.. doctest::
 
     julia> ex = :(a+b*c+1)
     :(a + b * c + 1)
@@ -163,7 +185,9 @@ example of the short form used to quote an arithmetic expression::
 or use :func:`dump` as above).
 
 Note that equivalent expressions may be constructed using :func:`parse` or
-the direct :obj:`Expr` form::
+the direct :obj:`Expr` form:
+
+.. doctest::
 
     julia>      :(a + b*c + 1)  ==
 	   parse("a + b*c + 1") ==
@@ -353,6 +377,8 @@ Why macros
 
 Here is an extraordinarily simple macro:
 
+.. doctest::
+
     julia> macro sayhello(name)
 	       :( println("Hello, ", $name, "!") )
 	   end
@@ -360,7 +386,9 @@ Here is an extraordinarily simple macro:
 The "return value" of this macro is the *interpolated* expression; that is,
 with the value of the variable ``name`` passed directly as an argument to
 :func:`println`. We can verify this with the **extremely
-important** function :func:`macroexpand`::
+important** function :func:`macroexpand`:
+
+.. doctest::
 
     julia> ex = macroexpand( :(@sayhello("human")) )
     :(println("Hello, ","human","!"))
@@ -378,6 +406,8 @@ section. In fact, :func:`macroexpand` is such a function itself;
 evaluating the result of :func:`macroexpand` will give the expected
 output:
 
+.. doctest::
+
     julia> eval(macroexpand( quote @sayhello("human") end ))
     Hello, human!
 
@@ -386,7 +416,7 @@ define ``The Full Julia Compiler`` as ``eval, but much faster``.
 We actually want to *avoid* calling the :func:`eval` directly in
 "real" code, because it will be exceptionally slow compared to using
 ``The Full Julia Compiler``. But, if we are generating code, how
-how can we avoid calling :func:`eval` to execute our expressions?
+how can execute our expression without calling :func:`eval`?
 
 The answer is macros.
 
