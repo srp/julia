@@ -1538,7 +1538,7 @@ end
 
 run_interface(::Prompt) = nothing
 
-init_state(terminal, prompt::Prompt) = PromptState(terminal, prompt, IOBuffer(), (IOBuffer)[], InputAreaState(1, 1), length(prompt.prompt))
+init_state(terminal, prompt::Prompt) = PromptState(terminal, prompt, IOBuffer(), IOBuffer[], InputAreaState(1, 1), length(prompt.prompt))
 
 function init_state(terminal, m::ModalInterface)
     s = MIState(m, m.modes[1], false, Dict{Any,Any}())
